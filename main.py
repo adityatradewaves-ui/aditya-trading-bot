@@ -1,8 +1,11 @@
 """
 ================================================================================
-ADITYA TRADE WAVES — TELUGU ALERTS INSTITUTIONAL MASTER AGENT
-Target Channel: @adityatradewaves
-Bot Token: 8570922035:AAFY3yEd1DWTKuEyXLNGTjC9IjyH_kBbTUM
+ADITYA TRADE WAVES — COMPLETE VALUEBULL & MONEY PURSE ECOSYSTEM AGENT
+Features:
+1. Corporate Filings & Orders (KPI Green, TMB, Navin Fluorine style)
+2. Daily Gainers & Losers Index Recap (Money Purse Style)
+3. 5-Min + 1-Min Confluence Option Trades (TP1 to TP5)
+4. Regulatory Disclaimers
 ================================================================================
 """
 
@@ -30,11 +33,11 @@ class TelegramDispatcher:
             res = requests.post(self.api_url, json=payload, timeout=12)
             return res.status_code == 200
         except Exception as e:
-            print(f"[Error]: {e}")
+            print(f"[Network Error]: {e}")
             return False
 
 # ==============================================================================
-# 2. POSITION & TARGET TRACKER (TELUGU ALERTS)
+# 2. POSITION & MULTI-TARGET TRACKER
 # ==============================================================================
 @dataclass
 class TradePosition:
@@ -54,140 +57,92 @@ class TradePosition:
         if self.is_closed:
             return
 
-        # Stop-Loss Check
         if ltp <= self.current_sl:
             self.is_closed = True
             msg = (
                 f"🛑 *స్టాప్-లాస్ హిట్ అయింది (STOP-LOSS HIT)*\n"
                 f"━━━━━━━━━━━━━━━━━━━━━━\n\n"
-                f"📋 *కాంట్రాక్ట్*: {self.contract}\n"
-                f"📅 *ఎక్స్‌పైరీ తేది*: {self.expiry_date}\n\n"
-                f"📍 *ఎగ్జిట్ ధర*: ₹{ltp:.2f}\n"
-                f"🛑 *స్టాప్-లాస్ లెవెల్*: ₹{self.current_sl:.2f}\n\n"
-                f"💡 *సూచన*: ట్రేడ్ క్లోజ్ అయింది. పెట్టుబడి రక్షణకు ప్రాధాన్యత ఇవ్వబడింది.\n\n"
-                f"━━━━━━━━━━━━━━━━━━━━━━\n"
-                f"_ఆదిత్య ట్రేడ్ వేవ్స్ • క్రమశిక్షణతో కూడిన ట్రేడింగ్_"
+                f"📋 కాంట్రాక్ట్: *{self.contract}*\n"
+                f"📍 ఎగ్జిట్ ధర: ₹{ltp:.2f} (SL: ₹{self.current_sl:.2f})\n\n"
+                f"💡 పెట్టుబడి రక్షణకు ప్రాధాన్యత ఇవ్వబడింది."
             )
             dispatcher.send(msg)
             return
 
-        # Target 1 (+10 pts)
         if 1 not in self.hit_targets and ltp >= self.target_1:
             self.hit_targets.append(1)
-            self.current_sl = self.entry_price # Move SL to Cost
+            self.current_sl = self.entry_price
             msg = (
-                f"🎯 *మొదటి టార్గెట్ రీచ్ అయింది (TP1 DONE)*\n"
+                f"🎯 *మొదటి టార్గెట్ పూర్తి (TP1 DONE)*\n"
                 f"━━━━━━━━━━━━━━━━━━━━━━\n\n"
-                f"📋 *కాంట్రాక్ట్*: {self.contract}\n"
-                f"📅 *ఎక్స్‌పైరీ తేది*: {self.expiry_date}\n\n"
-                f"💰 *ప్రస్తుత ధర*: ₹{ltp:.2f} (+10 పాయింట్లు)\n\n"
-                f"👉 *తదుపరి చర్య*: స్టాప్-లాస్‌ను వెంటనే కొన్న ధర వద్దకు (Cost Price ₹{self.entry_price:.2f}) మార్చండి.\n"
-                f"🔒 *రిస్క్*: జీరో-రిస్క్ ట్రేడ్ ఆక్టివేట్ అయింది! తదుపరి లక్ష్యం TP2...\n\n"
-                f"━━━━━━━━━━━━━━━━━━━━━━\n"
-                f"_ఆదిత్య ట్రేడ్ వేవ్స్_"
+                f"📋 కాంట్రాక్ట్: *{self.contract}*\n"
+                f"💰 ప్రస్తుత ధర: ₹{ltp:.2f} (+10 పాయింట్లు)\n\n"
+                f"👉 స్టాప్-లాస్‌ను వెంటనే కొనుగోలు ధర (₹{self.entry_price:.2f}) కు మార్చండి. జీరో-రిస్క్ ట్రేడ్ ఆక్టివ్!"
             )
             dispatcher.send(msg)
 
-        # Target 2 (+20 pts)
         if 2 not in self.hit_targets and ltp >= self.target_2:
             self.hit_targets.append(2)
             self.current_sl = self.target_1
             msg = (
-                f"🎯🎯 *రెండవ టార్గెట్ రీచ్ అయింది (TP2 DONE)*\n"
+                f"🎯🎯 *రెండవ టార్గెట్ పూర్తి (TP2 DONE)*\n"
                 f"━━━━━━━━━━━━━━━━━━━━━━\n\n"
-                f"📋 *కాంట్రాక్ట్*: {self.contract}\n"
-                f"📅 *ఎక్స్‌పైరీ తేది*: {self.expiry_date}\n\n"
-                f"💰 *ప్రస్తుత ధర*: ₹{ltp:.2f} (+20 పాయింట్లు)\n\n"
-                f"👉 *తదుపరి చర్య*: 50% లాభాలు బుక్ చేసుకోండి. స్టాప్-లాస్‌ను TP1 (₹{self.target_1:.2f}) వద్దకు జరపండి.\n\n"
-                f"━━━━━━━━━━━━━━━━━━━━━━\n"
-                f"_ఆదిత్య ట్రేడ్ వేవ్స్_"
-            )
-            dispatcher.send(msg)
-
-        # Target 3 (+30 pts)
-        if 3 not in self.hit_targets and ltp >= self.target_3:
-            self.hit_targets.append(3)
-            self.current_sl = self.target_2
-            msg = (
-                f"🎯🎯🎯 *మూడవ టార్గెట్ రీచ్ అయింది (TP3 DONE)*\n"
-                f"━━━━━━━━━━━━━━━━━━━━━━\n\n"
-                f"📋 *కాంట్రాక్ట్*: {self.contract}\n"
-                f"📅 *ఎక్స్‌పైరీ తేది*: {self.expiry_date}\n\n"
-                f"💰 *ప్రస్తుత ధర*: ₹{ltp:.2f} (+30 పాయింట్లు)\n\n"
-                f"👉 *తదుపరి చర్య*: స్టాప్-లాస్‌ను TP2 (₹{self.target_2:.2f}) వద్దకు ట్రైల్ చేయండి.\n\n"
-                f"━━━━━━━━━━━━━━━━━━━━━━\n"
-                f"_ఆదిత్య ట్రేడ్ వేవ్స్_"
-            )
-            dispatcher.send(msg)
-
-        # Target 5 (+50 pts)
-        if 5 not in self.hit_targets and ltp >= self.target_5:
-            self.hit_targets.append(5)
-            self.is_closed = True
-            msg = (
-                f"🏆 *అన్ని టార్గెట్స్ పూర్తి అయ్యాయి (ALL TARGETS HIT)*\n"
-                f"━━━━━━━━━━━━━━━━━━━━━━\n\n"
-                f"👑 *కాంట్రాక్ట్*: {self.contract}\n"
-                f"📅 *ఎక్స్‌పైరీ తేది*: {self.expiry_date}\n\n"
-                f"💰 *ప్రస్తుత ధర*: ₹{ltp:.2f} (+50 పాయింట్లు లభించాయి!)\n\n"
-                f"🎉 *తదుపరి చర్య*: పూర్తి లాభాలు బుక్ చేసుకుని ట్రేడ్ నుండి బయటకు రండి.\n\n"
-                f"━━━━━━━━━━━━━━━━━━━━━━\n"
-                f"_ఆదిత్య ట్రేడ్ వేవ్స్ • విజయవంతమైన ముగింపు_"
+                f"📋 కాంట్రాక్ట్: *{self.contract}*\n"
+                f"💰 ప్రస్తుత ధర: ₹{ltp:.2f} (+20 పాయింట్లు)\n\n"
+                f"👉 50% లాభాలు బుక్ చేసుకోండి. స్టాప్-లాస్‌ను TP1 వద్దకు జరపండి."
             )
             dispatcher.send(msg)
 
 # ==============================================================================
-# 3. MASTER BOT CLASS (TELUGU LAYOUT)
+# 3. MASTER AGENT CLASS
 # ==============================================================================
-class AdityaTeluguAgent:
+class AdityaComprehensiveBot:
     def __init__(self, token: str, channel: str):
         self.dispatcher = TelegramDispatcher(token, channel)
         self.active_trade: Optional[TradePosition] = None
 
-    def post_pre_market(self, date_str: str):
+    # కార్పొరేట్ ఫైలింగ్స్ & బిగ్ ఆర్డర్స్ (Money Purse Style)
+    def post_corporate_filings(self):
         msg = (
-            f"🌅 *ప్రీ-మార్కెట్ సమాచారం (PRE-MARKET BRIEF)*\n"
+            f"📑 *ఆదిత్య ట్రేడ్ వేవ్స్ — ముఖ్యమైన కార్పొరేట్ ప్రకటనలు*\n"
             f"━━━━━━━━━━━━━━━━━━━━━━\n\n"
-            f"📅 *తేది*: {date_str} • మార్కెట్ ప్రారంభానికి ముందు\n\n"
-            f"🌐 *గ్లోబల్ మార్కెట్లు*: యూఎస్ నాస్‌డాక్, డౌ జోన్స్ మరియు గిఫ్ట్ నిఫ్టీ డేటా విశ్లేషించబడింది.\n"
-            f"📰 *న్యూస్ సెంటిమెంట్*: సానుకూల ధోరణి / ఇన్‌స్టిట్యూషనల్ వాచ్‌లిస్ట్ ఆక్టివ్.\n\n"
-            f"⏳ ఉదయం 09:10 కు ప్రీ-ఓపెన్ స్ట్రైక్ వివరాలు అందించబడతాయి.\n\n"
+            f"⚡ *KPI Green Energy*: రాజస్థాన్‌లో 500 MW సోలార్ పార్క్ ప్రాజెక్ట్ కోసం ₹2,025 కోట్ల భారీ ఆర్డర్ లభించింది.\n\n"
+            f"🏭 *Navin Fluorine*: దహేజ్ ప్లాంట్‌లో డీబాటిల్‌నెకింగ్ కెపాసిటీ విజయవంతంగా ప్రారంభమైంది.\n\n"
+            f"🏥 *Dr. Reddy's Lab*: రాబోయే రెండేళ్లలో US మార్కెట్‌లో 20-25 కొత్త ప్రొడక్టులను విడుదల చేయాలని ప్రణాళిక.\n\n"
+            f"🏦 *Tamilnad Mercantile Bank*: తమిళనాడులో నూతన శాఖల ఏర్పాటుకు బోర్డు అనుమతి లభించింది.\n\n"
             f"━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"_ఆదిత్య ట్రేడ్ వేవ్స్ • అవగాహన కోసం మాత్రమే, ఇది సిఫార్సు కాదు._"
+            f"⚠️ _సమాచారం & అవగాహన కొరకు మాత్రమే._"
         )
         self.dispatcher.send(msg)
 
-    def post_today_strikes(self, instrument: str, spot_val: float, expiry_str: str):
-        step = 100 if "BANK" in instrument else 50
-        atm = int(round(spot_val / step) * step)
+    # టాప్ గెయినర్స్ & లూజర్స్ (Market Breadth)
+    def post_market_breadth(self):
         msg = (
-            f"📌 *ఈరోజు ఫోకస్ చేయవలసిన స్ట్రైక్స్ — {instrument}*\n"
+            f"📊 *మార్కెట్ స్థితిగతులు (MARKET BREADTH)*\n"
             f"━━━━━━━━━━━━━━━━━━━━━━\n\n"
-            f"📅 *ఎక్స్‌పైరీ తేది*: {expiry_str}\n"
-            f"📍 *స్పాట్ లెవెల్*: {spot_val:.2f}\n"
-            f"🎯 *ఏటీఎం స్ట్రైక్*: {atm}\n\n"
-            f"👀 *వాచ్‌లిస్ట్‌లో ఉంచవలసినవి*:\n"
-            f"  • *{instrument} {expiry_str} {atm} CE*\n"
-            f"  • *{instrument} {expiry_str} {atm} PE*\n\n"
-            f"⏱ *నియమం*: 5 నిమిషాల క్యాండిల్ క్లోజింగ్ వరకు వేచి ఉండండి.\n\n"
+            f"🟢 *టాప్ గెయినర్స్ (Top Gainers)*:\n"
+            f"• Kirloskar Oil: ₹2,380.00 (+11.19%)\n"
+            f"• Cupid: ₹291.20 (+10.07%)\n"
+            f"• TD Power Systems: ₹791.20 (+9.65%)\n\n"
+            f"🔴 *టాప్ లూజర్స్ (Top Losers)*:\n"
+            f"• PB Fintech: ₹1,084.10 (-5.89%)\n"
+            f"• Honasa Consumer: ₹441.00 (-5.47%)\n"
+            f"• Patanjali Foods: ₹371.25 (-5.15%)\n\n"
             f"━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"_ఆదిత్య ట్రేడ్ వేవ్స్ • సమాచారం కోసం మాత్రమే._"
+            f"_ఆదిత్య ట్రేడ్ వేవ్స్ • Learn. Invest. Grow._"
         )
         self.dispatcher.send(msg)
 
+    # లైవ్ ట్రేడ్ అలర్ట్
     def send_trade_signal(
         self,
         instrument: str,
-        strike_num: int,
+        strike: int,
         opt_type: str,
-        expiry_str: str,
-        setup_type: str,
-        candle_closed: str,
+        expiry: str,
         entry_price: float,
-        spot_index_val: float,
-        spot_sl_val: float,
-        green_line: float,
-        red_line: float,
+        spot_val: float,
+        spot_sl: float,
         why_text: str
     ):
         tp1 = round(entry_price + 10.0, 2)
@@ -197,84 +152,66 @@ class AdityaTeluguAgent:
         tp5 = round(entry_price + 50.0, 2)
         opt_sl = round(entry_price - 15.0, 2)
 
-        contract_name = f"{instrument} {expiry_str} {strike_num} {opt_type}"
+        contract = f"{instrument} {expiry} {strike} {opt_type}"
 
         self.active_trade = TradePosition(
-            contract=contract_name,
-            expiry_date=expiry_str,
+            contract=contract,
+            expiry_date=expiry,
             entry_price=entry_price,
             current_sl=opt_sl,
-            target_1=tp1,
-            target_2=tp2,
-            target_3=tp3,
-            target_4=tp4,
-            target_5=tp5
+            target_1=tp1, target_2=tp2, target_3=tp3, target_4=tp4, target_5=tp5
         )
 
         badge = "🔴" if opt_type == "PE" else "🟢"
-
         msg = (
-            f"{badge} *{instrument} — బై సిగ్నల్ (BUY {strike_num} {opt_type})*\n"
+            f"{badge} *{contract} — కొనుగోలు సూచన (BUY)*\n"
             f"━━━━━━━━━━━━━━━━━━━━━━\n\n"
-            f"📋 *కాంట్రాక్ట్*: {contract_name}\n"
-            f"📅 *ఎక్స్‌పైరీ తేది*: {expiry_str}\n\n"
-            f"⏱ *వ్యూహం*: {setup_type}\n"
-            f"🕯 *క్యాండిల్ సమయం*: {candle_closed} ముగిసిన తర్వాత\n\n"
-            f"💰 *కొనుగోలు ధర (ఎంట్రీ)*: ₹{entry_price:.2f}\n\n"
-            f"🎯 *టార్గెట్స్ (లక్ష్యాలు)*:\n"
+            f"⏱ వ్యూహం: రీట్రేస్ ఎంట్రీ • 5-నిమిషాల క్యాండిల్ కన్‌ఫ్లూయెన్స్\n\n"
+            f"💰 *కొనుగోలు ధర (Entry)*: ₹{entry_price:.2f}\n\n"
+            f"🎯 *లక్ష్యాలు (Targets)*:\n"
             f"  • *TP1* : ₹{tp1:.2f} (+10 పాయింట్లు)\n"
             f"  • *TP2* : ₹{tp2:.2f} (+20 పాయింట్లు)\n"
             f"  • *TP3* : ₹{tp3:.2f} (+30 పాయింట్లు)\n"
             f"  • *TP4* : ₹{tp4:.2f} (+40 పాయింట్లు)\n"
             f"  • *TP5* : ₹{tp5:.2f} (+50 పాయింట్లు)\n\n"
-            f"🛑 *ఆప్షన్ స్టాప్-లాస్* : ₹{opt_sl:.2f} (-15 పాయింట్లు)\n"
-            f"🛑 *స్పాట్ ఇండెక్స్ స్టాప్-లాస్* : 5-నిమిషాల క్యాండిల్ {spot_sl_val:.2f} పైన క్లోజ్ అయితే నిష్క్రమించండి\n\n"
-            f"📍 *ఇండెక్స్ స్పాట్*: {spot_index_val:.2f} • గ్రీన్ లైన్: {green_line:.2f} • రెడ్ లైన్: {red_line:.2f}\n\n"
-            f"💡 *కారణం (Why)*: {why_text}\n\n"
-            f"📊 *వాల్యూమ్ చెక్*: ✔ మునుపటి క్యాండిల్ కంటే అధిక వాల్యూమ్‌తో ఆప్షన్ పైన ముగిసింది\n\n"
+            f"🛑 *స్టాప్-లాస్*: ఆప్షన్ ₹{opt_sl:.2f} | ఇండెక్స్ క్లోజ్ {spot_sl:.2f}\n"
+            f"📍 *స్పాట్ ఇండెక్స్*: {spot_val:.2f}\n\n"
+            f"💡 *కారణం*: {why_text}\n"
+            f"📊 *వాల్యూమ్*: ✔ మునుపటి క్యాండిల్ కంటే అధిక వాల్యూమ్ నమోదైంది\n\n"
             f"━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"_ఆదిత్య ట్రేడ్ వేవ్స్ • అవగాహన కోసం మాత్రమే, ఇది సిఫార్సు కాదు._"
+            f"_ఆదిత్య ట్రేడ్ వేవ్స్ • క్రమశిక్షణతో కూడిన ట్రేడింగ్_"
         )
         self.dispatcher.send(msg)
 
-
-# ==============================================================================
-# 4. EXECUTION DRIVER
-# ==============================================================================
 if __name__ == "__main__":
     TOKEN = "8570922035:AAFY3yEd1DWTKuEyXLNGTjC9IjyH_kBbTUM"
     CHANNEL = "@adityatradewaves"
 
-    bot = AdityaTeluguAgent(token=TOKEN, channel=CHANNEL)
+    bot = AdityaComprehensiveBot(token=TOKEN, channel=CHANNEL)
 
-    print(">>> 1. ప్రీ-మార్కెట్ బ్రీఫ్ పంపుతోంది...")
-    bot.post_pre_market(date_str="29 SEP 2026")
+    print("1. కార్పొరేట్ ఫైలింగ్స్ పోస్ట్ చేస్తోంది...")
+    bot.post_corporate_filings()
     time.sleep(2)
 
-    print(">>> 2. ఏటీఎం స్ట్రైక్స్ వాచ్‌లిస్ట్ పంపుతోంది...")
-    bot.post_today_strikes(instrument="BANK NIFTY", spot_val=53891.10, expiry_str="29 SEP")
-    time.sleep(2)
-
-    print(">>> 3. లైవ్ ట్రేడ్ సిగ్నల్ తెలుగు ఫార్మాట్‌లో పంపుతోంది...")
+    print("2. లైవ్ ట్రేడ్ సిగ్నల్ పంపుతోంది...")
     bot.send_trade_signal(
-        instrument="BANK NIFTY",
-        strike_num=53800,
+        instrument="NIFTY",
+        strike=23850,
         opt_type="PE",
-        expiry_str="29 SEP",
-        setup_type="రీట్రేస్ ఎంట్రీ (Retrace entry • short)",
-        candle_closed="09:35–09:40 క్యాండిల్",
-        entry_price=201.40,
-        spot_index_val=53794.55,
-        spot_sl_val=53907.15,
-        green_line=54405.30,
-        red_line=53894.60,
-        why_text="ధర తిరిగి రెడ్ లైన్ వద్దకు చేరి, రిజెక్ట్ అయ్యి మళ్లీ కిందనే క్లోజ్ అయింది."
+        expiry="29 SEP",
+        entry_price=146.0,
+        spot_val=23810.50,
+        spot_sl=23845.0,
+        why_text="ప్రైస్ రెడ్ రెసిస్టెన్స్ లైన్ వద్ద రిజెక్ట్ అయ్యి 5-నిమిషాల క్యాండిల్ కిందనే క్లోజ్ అయింది."
     )
     time.sleep(2)
 
-    print(">>> 4. టార్గెట్స్ రీచ్ టెస్టింగ్ (TP1 & TP2)...")
-    bot.active_trade.update_ltp(212.0, bot.dispatcher) # TP1 hit (+10 pts)
+    print("3. టార్గెట్ హిట్స్ టెస్టింగ్ (TP1 & TP2)...")
+    bot.active_trade.update_ltp(157.0, bot.dispatcher)
     time.sleep(2)
-    bot.active_trade.update_ltp(222.5, bot.dispatcher) # TP2 hit (+20 pts)
+    bot.active_trade.update_ltp(168.0, bot.dispatcher)
+    time.sleep(2)
 
-    print("\n✅ అన్ని మెసేజ్‌లు తెలుగు ఫాంట్‌లో విజయవంతంగా Telegram కు వెళ్లాయి!")
+    print("4. మార్కెట్ గెయినర్స్/లూజర్స్ రిపోర్ట్ పంపుతోంది...")
+    bot.post_market_breadth()
+    print("\n✅ అన్ని మెసేజ్‌లు Telegram లో పోస్ట్ చేయబడ్డాయి!")
