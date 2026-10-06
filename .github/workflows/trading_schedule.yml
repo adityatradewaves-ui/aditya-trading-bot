@@ -1,14 +1,13 @@
-name: Aditya Trade Waves Daily Run
+name: Aditya Trade Waves Live Market Engine
 
 on:
   schedule:
-    # Monday nundi Friday varaku Indian Standard Time (IST) 08:30 AM ki automatic ga run avtundi
-    # UTC 03:00 AM ante IST 08:30 AM
-    - cron: '0 3 * * 1-5'
+    # Monday nundi Friday varaku IST 09:10 AM (UTC 03:40 AM) ki start avtundi
+    - cron: '40 3 * * 1-5'
   workflow_dispatch:
 
 jobs:
-  run-trading-bot:
+  run-live-engine:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -22,8 +21,8 @@ jobs:
       - name: Install Libraries
         run: |
           pip install --upgrade pip
-          pip install requests feedparser yfinance
+          pip install -r requirements.txt
 
-      - name: Run Trading Script
+      - name: Run Intraday Continuous Engine
         run: |
           python main.py
