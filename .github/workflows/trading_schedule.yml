@@ -2,27 +2,28 @@ name: Aditya Trade Waves Daily Run
 
 on:
   schedule:
-    # సోమవారం నుండి శుక్రవారం వరకు భారత కాలమానం ప్రకారం ఉదయం 08:35 AM కు రన్ అవుతుంది
-    # UTC లో 03:05 AM అంటే IST లో 08:35 AM
-    - cron: '5 3 * * 1-5'
-  workflow_dispatch: # మనం కావాలనుకున్నప్పుడు టెస్ట్ చేసుకోవడానికి
+    # Monday nundi Friday varaku Indian Standard Time (IST) 08:30 AM ki automatic ga run avtundi
+    # UTC 03:00 AM ante IST 08:30 AM
+    - cron: '0 3 * * 1-5'
+  workflow_dispatch:
 
 jobs:
   run-trading-bot:
     runs-on: ubuntu-latest
     steps:
-      - name: Code Checkout
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Python Setup
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
       - name: Install Libraries
         run: |
-          pip install -r requirements.txt
+          pip install --upgrade pip
+          pip install requests feedparser yfinance
 
-      - name: Run Market Bot
+      - name: Run Trading Script
         run: |
           python main.py
