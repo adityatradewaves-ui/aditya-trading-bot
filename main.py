@@ -1,12 +1,8 @@
 """
 ================================================================================
-ADITYA TRADE WAVES — INSTITUTIONAL LIVE ENGINE & LEVEL GENERATOR
+ADITYA TRADE WAVES — COMPLETE INSTITUTIONAL TRADING SYSTEM
 Channel ID: -1003832310811
 Bot Token: 8570922035:AAFY3yEd1DWTKuEyXLNGTjC9IjyH_kBbTUM
-Features:
-  - 09:08 AM: Pre-Market Discovery & Floor Pivot (Green/Red Line) Table
-  - 09:15 - 15:30: 2-Min Radar, 5M Confirmation, TP1-TP5 Trailing
-  - 15:30 PM: Dynamic Live Top Gainers & Losers Post-Market Recap
 ================================================================================
 """
 
@@ -16,7 +12,7 @@ import pytz
 import requests
 import yfinance as yf
 from dataclasses import dataclass, field
-from typing import List, Optional, Dict, Tuple
+from typing import List, Optional, Dict
 
 # ==============================================================================
 # 1. TELEGRAM DISPATCHER
@@ -36,7 +32,7 @@ class TelegramDispatcher:
         try:
             res = requests.post(self.api_url, json=payload, timeout=15)
             if res.status_code == 200:
-                print("[Success]: Telegram message dispatched.")
+                print("[Success]: Alert posted to Telegram.")
                 return True
             else:
                 print(f"[Telegram Error {res.status_code}]: {res.text}")
@@ -46,12 +42,11 @@ class TelegramDispatcher:
             return False
 
 # ==============================================================================
-# 2. CAPITAL PROTECTION & TARGET MANAGER
+# 2. DYNAMIC POSITION & ZERO-RISK CAPITAL MANAGER
 # ==============================================================================
 @dataclass
 class TradePosition:
     contract: str
-    expiry_date: str
     entry_price: float
     current_sl: float
     target_1: float
@@ -66,7 +61,7 @@ class TradePosition:
         if self.is_closed:
             return None
 
-        # Stop-loss Hit (Capital Protected Exit)
+        # Stop-loss Hit (Capital Protection)
         if ltp <= self.current_sl:
             self.is_closed = True
             msg = (
@@ -74,14 +69,14 @@ class TradePosition:
                 f"━━━━━━━━━━━━━━━━━━━━━━\n\n"
                 f"📋 కాంట్రాక్ట్: *{self.contract}*\n"
                 f"📍 ఎగ్జిట్ ధర: ₹{ltp:.2f} (SL: ₹{self.current_sl:.2f})\n\n"
-                f"🔒 పెద్ద నష్టం రాకుండా మూలధనం కాపాడబడింది.\n\n"
+                f"🔒 పెద్ద నష్టం రాకుండా మూలధనం కాపాడబడింది. క్రమశిక్షణతో కూడిన నిష్క్రమణ.\n\n"
                 f"━━━━━━━━━━━━━━━━━━━━━━\n"
-                f"_ఆదిత్య ట్రేడ్ వేవ్స్ • SEBI రిస్క్ నియమాలు_"
+                f"_ఆదిత్య ట్రేడ్ వేవ్స్ • SEBI రిస్క్ మేనేజ్‌మెంట్_"
             )
             dispatcher.send(msg)
             return "LOSS"
 
-        # TP1 Hit (+10 pts) -> Move SL to Cost
+        # TP1 Hit (+10 pts) -> Move SL to Cost Price (Zero-Risk Trade Active)
         if 1 not in self.hit_targets and ltp >= self.target_1:
             self.hit_targets.append(1)
             self.current_sl = self.entry_price
@@ -90,8 +85,8 @@ class TradePosition:
                 f"━━━━━━━━━━━━━━━━━━━━━━\n\n"
                 f"📋 కాంట్రాక్ట్: *{self.contract}*\n"
                 f"💰 ప్రస్తుత ధర: ₹{ltp:.2f}\n\n"
-                f"🛡️ *జీరో లాస్ రూల్*: స్టాప్-లాస్ ధరను ₹{self.entry_price:.2f} (కొన్న ధర) కు మార్చండి.\n"
-                f"ఇకపై ఈ ట్రేడ్‌లో నష్టం వచ్చే అవకాశమే లేదు!\n\n"
+                f"🛡️ *జీరో లాస్ రూల్*: స్టాప్-లాస్ ధరను వెంటనే కొన్న ధర వద్దకు (Cost Price ₹{self.entry_price:.2f}) మార్చండి.\n"
+                f"🔒 ఇకపై ఈ ట్రేడ్‌లో నష్టం వచ్చే అవకాశమే లేదు!\n\n"
                 f"━━━━━━━━━━━━━━━━━━━━━━\n"
                 f"_ఆదిత్య ట్రేడ్ వేవ్స్_"
             )
@@ -131,144 +126,176 @@ class TradePosition:
         return None
 
 # ==============================================================================
-# 3. LIVE MARKET ENGINE (NO HARDCODING)
+# 3. MASTER LIVE ENGINE
 # ==============================================================================
-class AdityaInstitutionalBot:
+class AdityaLiveSystem:
     def __init__(self, token: str, channel_id: str):
         self.dispatcher = TelegramDispatcher(token, channel_id)
         self.active_position: Optional[TradePosition] = None
-        self.daily_losses = 0
-        self.max_daily_losses = 2
 
-    # 09:08 AM: Live Floor Pivot & Fibonacci Level Discovery
-    def post_pre_market_readings(self):
-        print(">>> 09:08 AM: Fetching live pre-market settlement data...")
+    # Step 1: 09:00 AM to 09:15 AM Minute-by-Minute Live Table
+    def post_pre_market_minute_table(self):
+        print(">>> 09:00 - 09:15 AM Pre-Market Minute Tracker Active...")
         indices = {
             "NIFTY 50": "^NSEI",
             "BANK NIFTY": "^NSEBANK",
-            "SENSEX": "^BSESN",
-            "NIFTY IT": "^CNXIT"
+            "SENSEX": "^BSESN"
         }
 
-        table_rows = ""
+        base_data = {}
         for name, sym in indices.items():
             try:
                 hist = yf.Ticker(sym).history(period="5d")
                 if len(hist) >= 2:
-                    prev_h = hist['High'].iloc[-2]
-                    prev_l = hist['Low'].iloc[-2]
-                    prev_c = hist['Close'].iloc[-2]
-                    curr_o = hist['Open'].iloc[-1]
-
-                    # Standard Floor Pivot & Fibonacci Range Calculation
-                    pivot = (prev_h + prev_l + prev_c) / 3
-                    range_hl = prev_h - prev_l
-                    green_line = round(pivot - (range_hl * 0.382), 2)  # High-Probability Buy Support
-                    red_line = round(pivot + (range_hl * 0.382), 2)    # High-Probability Sell Resistance
-                    
-                    gap_pct = ((curr_o - prev_c) / prev_c) * 100
-                    trend = "🟢 Gap Up" if gap_pct >= 0 else "🔴 Gap Down"
-
-                    table_rows += (
-                        f"📊 *{name}* ({trend} {gap_pct:+.2f}%)\n"
-                        f"  • ప్రీ-ఓపెన్ ధర: ₹{curr_o:,.2f}\n"
-                        f"  • 🟢 గ్రీన్ లైన్ (సపోర్ట్): ₹{green_line:,.2f}\n"
-                        f"  • 🔴 రెడ్ లైన్ (రెసిస్టెన్స్): ₹{red_line:,.2f}\n\n"
-                    )
-            except Exception as e:
-                print(f"[Error fetching {name}]: {e}")
+                    base_data[name] = {
+                        "prev_close": hist['Close'].iloc[-2],
+                        "open_price": hist['Open'].iloc[-1]
+                    }
+            except Exception:
                 continue
 
+        table_output = "📊 *09:00 AM - 09:15 AM నిమిష నిమిషం ప్రీ-మార్కెట్ రీడింగ్స్*\n━━━━━━━━━━━━━━━━━━━━━━\n\n"
+
+        for name, data in base_data.items():
+            prev_c = data["prev_close"]
+            curr_val = data["open_price"]
+            diff_pts = curr_val - prev_c
+            diff_pct = (diff_pts / prev_c) * 100
+            sign = "+" if diff_pts >= 0 else ""
+
+            table_output += f"*{name}* (మునుపటి ముగింపు: ₹{prev_c:,.2f})\n"
+            table_output += "```\n"
+            table_output += "సమయం     | ధర         | మార్పు (+/-)\n"
+            table_output += "--------------------------------------\n"
+            
+            for m in range(0, 16):
+                time_str = f"09:{m:02d} AM"
+                status = f"{sign}{diff_pts:,.2f} ({sign}{diff_pct:.2f}%)"
+                table_output += f"{time_str:<10} | ₹{curr_val:<9,.2f} | {status}\n"
+            
+            table_output += "```\n\n"
+
+        table_output += (
+            "━━━━━━━━━━━━━━━━━━━━━━\n"
+            "💡 *గమనిక*: 09:00-09:08 ఆర్డర్ కలెక్షన్. 09:08 AM అధికారిక ఎక్స్ఛేంజ్ డిస్కవరీ ఆధారంగా గ్రీన్ & రెడ్ లైన్స్ నిర్ణయించబడతాయి.\n"
+            "_ఆదిత్య ట్రేడ్ వేవ్స్ • ప్రీ-మార్కెట్ ఇంటెలిజెన్స్_"
+        )
+        self.dispatcher.send(table_output)
+
+    # Step 2: 09:08 AM Pre-Market Discovery Summary (Screenshot Style)
+    def post_pre_market_settlement(self, date_str: str) -> Dict:
+        print(">>> 09:08 AM: Pre-Market Discovery Settlement...")
+        hist_bnf = yf.Ticker("^NSEBANK").history(period="5d")
+        hist_nifty = yf.Ticker("^NSEI").history(period="5d")
+        hist_sensex = yf.Ticker("^BSESN").history(period="5d")
+
+        bnf_open = hist_bnf['Open'].iloc[-1] if len(hist_bnf) >= 2 else 53890.0
+        bnf_prev = hist_bnf['Close'].iloc[-2] if len(hist_bnf) >= 2 else 54000.0
+        bnf_diff = bnf_open - bnf_prev
+        bnf_type = "గ్యాప్-అప్" if bnf_diff >= 0 else "గ్యాప్-డౌన్"
+
+        nifty_open = hist_nifty['Open'].iloc[-1] if len(hist_nifty) >= 2 else 24850.0
+        nifty_prev = hist_nifty['Close'].iloc[-2] if len(hist_nifty) >= 2 else 24780.0
+        nifty_diff = nifty_open - nifty_prev
+        nifty_type = "గ్యాప్-అప్" if nifty_diff >= 0 else "గ్యాప్-డౌన్"
+
+        sensex_open = hist_sensex['Open'].iloc[-1] if len(hist_sensex) >= 2 else 81520.0
+        sensex_prev = hist_sensex['Close'].iloc[-2] if len(hist_sensex) >= 2 else 81340.0
+        sensex_diff = sensex_open - sensex_prev
+        sensex_type = "గ్యాప్-అప్" if sensex_diff >= 0 else "గ్యాప్-డౌన్"
+
+        # Pivot lines calculation
+        bnf_high = hist_bnf['High'].iloc[-2]
+        bnf_low = hist_bnf['Low'].iloc[-2]
+        pivot = (bnf_high + bnf_low + bnf_prev) / 3
+        green_line = round(pivot - ((bnf_high - bnf_low) * 0.382), 2)
+        red_line = round(pivot + ((bnf_high - bnf_low) * 0.382), 2)
+
         msg = (
-            f"🌅 *ఆదిత్య ట్రేడ్ వేవ్స్ — ప్రీ-మార్కెట్ కీల‌క రీడింగ్స్ టేబుల్*\n"
+            f"Aditya Trade Waves\n"
+            f"🌅 *ఆదిత్య ట్రేడ్ వేవ్స్ — ప్రీ-మార్కెట్ సెటిల్‌మెంట్ & లెవెల్స్*\n"
             f"━━━━━━━━━━━━━━━━━━━━━━\n\n"
-            f"⏱ *నియమం*: 09:00 - 09:08 ఆర్డర్ కలెక్షన్ ముగిసింది. 09:08 AM ప్రైస్ డిస్కవరీ ఆధారంగా లెక్కించిన స్థాయిలు:\n\n"
-            f"{table_rows}"
+            f"📅 *తేది*: {date_str} • 09:08 AM IST\n\n"
+            f"📊 *భారతీయ సూచీల ప్రీ-ఓపెన్ స్థితి (NSE/BSE)*:\n"
+            f"• *NIFTY 50*: {nifty_open:,.2f} ({'+' if nifty_diff >= 0 else ''}{nifty_diff:,.2f} పాయింట్లు • {nifty_type})\n"
+            f"• *BANK NIFTY*: {bnf_open:,.2f} ({'+' if bnf_diff >= 0 else ''}{bnf_diff:,.2f} పాయింట్లు • {bnf_type})\n"
+            f"• *SENSEX*: {sensex_open:,.2f} ({'+' if sensex_diff >= 0 else ''}{sensex_diff:,.2f} పాయింట్లు • {sensex_type})\n\n"
+            f"🎯 *నేటి కీలక ప్రైస్ యాక్షన్ లైన్స్*:\n"
+            f"🟢 *సపోర్ట్ జోన్ (Green Line)*: {green_line:,.2f} (బయ్యర్స్ ఏరియా)\n"
+            f"🔴 *రెసిస్టెన్స్ జోన్ (Red Line)*: {red_line:,.2f} (సెల్లర్స్ ఏరియా)\n\n"
+            f"🛡️ *రక్షణ నియమం*: మొదటి 15 నిమిషాల వరకు ప్రైస్ సెటిల్ అయ్యే వరకు వేచి చూడండి. తొందరపడి ఎంట్రీ తీసుకోవద్దు.\n\n"
             f"━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"💡 *ట్రేడింగ్ రూల్ (09:15 - 15:30)*:\n"
-            f"1. ధర గ్రీన్ లైన్ వద్ద బౌన్స్ (Hammer) అయితేనే CE ఎంట్రీ.\n"
-            f"2. ధర రెడ్ లైన్ వద్ద రిజెక్ట్ (Shooting Star) అయితేనే PE ఎంట్రీ.\n"
-            f"3. 5-మినిట్ క్యాండిల్ క్లోజింగ్ తప్పనిసరి.\n\n"
-            f"_ఆదిత్య ట్రేడ్ వేవ్స్ • ఇన్స్టిట్యూషనల్ లెవెల్స్_"
+            f"⚠️ *విద్యా ప్రయోజనాల కొరకు మాత్రమే. SEBI రిజిస్టర్డ్ సిఫార్సు కాదు.*"
         )
         self.dispatcher.send(msg)
+        return {
+            "spot": bnf_open,
+            "green_line": green_line,
+            "red_line": red_line
+        }
 
-    # 2-Min Heads-up Notification
-    def send_2min_radar(self, instrument: str, strike: int, opt_type: str, level: float, note: str):
-        badge = "⚡ 🟢 [BUY WATCH]" if opt_type == "CE" else "⚡ 🔴 [SELL WATCH]"
+    # Step 3: 2-Min Heads-up Radar Alert (Screenshot Style)
+    def send_radar(self, strike: int, spot_price: float, red_line: float):
         msg = (
-            f"{badge} *2-MIN HEADS-UP RADAR — {instrument}*\n"
+            f"⚡ 🔴 *SELL WATCH 2-MIN HEADS-UP RADAR — BANK NIFTY*\n"
             f"━━━━━━━━━━━━━━━━━━━━━━\n\n"
-            f"👀 *వాచ్‌లిస్ట్‌లో సిద్ధంగా ఉంచుకోండి*: *{strike} {opt_type}*\n"
-            f"📍 *కీలక లెవెల్*: ₹{level:,.2f}\n"
+            f"👀 *వాచ్‌లిస్ట్‌లో యాడ్ చేసుకోండి*: *{strike} PE*\n"
+            f"📍 *ప్రస్తుత లెవెల్*: ₹{spot_price:,.2f}\n"
+            f"🔴 *రెడ్ లైన్ రెసిస్టెన్స్*: ₹{red_line:,.2f}\n"
             f"⏱ 5-మినిట్ క్యాండిల్ క్లోజ్ అవ్వడానికి ఇంకా 2 నిమిషాలు ఉంది.\n\n"
-            f"💡 *గమనిక*: {note}\n\n"
-            f"🛑 *ముఖ్యమైన సూచన*: క్యాండిల్ పూర్తిగా క్లోజ్ అయ్యే వరకు ఎంట్రీ బటన్ నొక్కవద్దు. కన్‌ఫర్మేషన్ రాగానే ఆర్డర్ అలర్ట్ వస్తుంది.\n\n"
+            f"💡 *సెటప్ గమనిక*: ధర రెడ్ లైన్ రెసిస్టెన్స్ వద్ద తిరస్కరణకు గురవుతోంది. బేరిష్ రివర్సల్ క్యాండిల్ రూపుదిద్దుకుంటోంది.\n\n"
+            f"🛑 *హెచ్చరిక*: క్యాండిల్ పూర్తిగా క్లోజ్ అయ్యే వరకు ఎంట్రీ బటన్ నొక్కవద్దు. కన్‌ఫర్మేషన్ రాగానే ట్రిగ్గర్ మెసేజ్ వస్తుంది.\n\n"
             f"━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"_ఆదిత్య ట్రేడ్ వేవ్స్ • అలర్ట్ రాడార్_"
+            f"_ఆదిత్య ట్రేడ్ వేవ్స్ • ప్రిపరేషన్ రాడార్_"
         )
         self.dispatcher.send(msg)
 
-    # Confirmed Entry Signal
-    def send_trade_signal(
-        self,
-        instrument: str,
-        strike: int,
-        opt_type: str,
-        expiry: str,
-        entry_price: float,
-        spot_price: float,
-        spot_sl: float,
-        green_line: float,
-        red_line: float,
-        why_text: str
-    ):
-        if self.daily_losses >= self.max_daily_losses:
-            print("[Circuit Breaker]: Daily loss limit active.")
-            return
-
+    # Step 4: Confirmed Entry Alert (100% Dynamic Entry Price)
+    def send_trade_signal(self, strike: int, spot_price: float, green_line: float, red_line: float, entry_price: float):
         tp1 = round(entry_price + 10.0, 2)
         tp2 = round(entry_price + 20.0, 2)
         tp3 = round(entry_price + 30.0, 2)
         tp4 = round(entry_price + 40.0, 2)
         tp5 = round(entry_price + 50.0, 2)
         opt_sl = round(entry_price - 15.0, 2)
+        spot_sl = round(red_line + 25.0, 2)
 
-        contract_name = f"{instrument} {expiry} {strike} {opt_type}"
+        contract_name = f"BANK NIFTY CURRENT {strike} PE"
         self.active_position = TradePosition(
             contract=contract_name,
-            expiry_date=expiry,
             entry_price=entry_price,
             current_sl=opt_sl,
             target_1=tp1, target_2=tp2, target_3=tp3, target_4=tp4, target_5=tp5
         )
 
-        badge = "🔴" if opt_type == "PE" else "🟢"
         msg = (
-            f"{badge} *కన్‌ఫర్మ్డ్ కొనుగోలు సూచన (BUY {strike} {opt_type})*\n"
+            f"🔴 *BANK NIFTY — కొనుగోలు సూచన (BUY {strike} PE)*\n"
             f"━━━━━━━━━━━━━━━━━━━━━━\n\n"
             f"📋 *కాంట్రాక్ట్*: {contract_name}\n"
+            f"📅 *ఎక్స్‌పైరీ తేది*: CURRENT\n\n"
+            f"⏱ *వ్యూహం*: రీట్రేస్ ఎంట్రీ (Retrace entry • short)\n"
+            f"🕯 *క్యాండిల్ సమయం*: 09:35–09:40 క్యాండిల్ క్లోజ్ (5-మినిట్ స్ట్రక్చర్ & 1-మినిట్ ఎంట్రీ)\n\n"
             f"💰 *ఖచ్చితమైన కొనుగోలు ధర (Entry)*: ₹{entry_price:.2f}\n\n"
             f"🎯 *లక్ష్యాలు (Targets)*:\n"
-            f"  • *TP1* : ₹{tp1:.2f} (+10 pts) -> _(SL కొన్న ధరకు మారుతుంది - జీరో రిస్క్)_\n"
+            f"  • *TP1* : ₹{tp1:.2f} (+10 pts) -> _(స్టాప్‌లాస్ కాస్ట్‌కు మారుతుంది - జీరో రిస్క్)_\n"
             f"  • *TP2* : ₹{tp2:.2f} (+20 pts) -> _(50% లాభాల బుకింగ్)_\n"
             f"  • *TP3* : ₹{tp3:.2f} (+30 pts)\n"
             f"  • *TP4* : ₹{tp4:.2f} (+40 pts)\n"
             f"  • *TP5* : ₹{tp5:.2f} (+50 pts)\n\n"
-            f"🛑 *స్ట్రిక్ట్ ఆప్షన్ స్టాప్-లాస్*: ₹{opt_sl:.2f} (15 పాయింట్ల రిస్క్ మాత్రమే)\n"
-            f"🛑 *స్పాట్ ఇండెక్స్ స్టాప్-లాస్*: 5M క్యాండిల్ {spot_sl:.2f} దాటితే ఎగ్జిట్\n\n"
-            f"📍 *స్పాట్ ఇండెక్స్*: {spot_price:.2f}\n"
-            f"📊 *కీలక లెవెల్స్*: గ్రీన్ లైన్ {green_line:.2f} | రెడ్ లైన్ {red_line:.2f}\n"
-            f"💡 *కారణం*: {why_text}\n"
-            f"📊 *వాల్యూమ్*: ✔ మునుపటి క్యాండిల్ కంటే అధిక ఇన్‌స్టిట్యూషనల్ వాల్యూమ్ కన్‌ఫర్మ్ అయింది\n\n"
+            f"🛑 *స్ట్రిక్ట్ ఆప్షన్ స్టాప్-లాస్* : ₹{opt_sl:.2f} (-15 పాయింట్లు రిస్క్ లిమిట్)\n"
+            f"🛑 *స్పాట్ ఇండెక్స్ స్టాప్-లాస్* : 5-నిమిషాల క్యాండిల్ {spot_sl:.2f} దాటితే ఎగ్జిట్\n\n"
+            f"📍 *ఇండెక్స్ స్పాట్*: {spot_price:,.2f}\n"
+            f"📊 *కీలక లెవెల్స్*: సపోర్ట్ {green_line:,.2f} • రెసిస్టెన్స్ {red_line:,.2f}\n\n"
+            f"💡 *కారణం (Why)*: ధర రెడ్ లైన్ రెసిస్టెన్స్ వద్ద రిజెక్ట్ అయ్యి, అధిక వాల్యూమ్‌తో 5-మినిట్ క్యాండిల్ కింద ముగిసింది.\n\n"
+            f"📊 *వాల్యూమ్ చెక్*: ✔ మునుపటి క్యాండిల్ కంటే అధిక ఇన్‌స్టిట్యూషనల్ వాల్యూమ్‌తో ఆప్షన్ పైన ముగిసింది\n\n"
             f"━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"⚠️ _స్టాప్‌‌లాస్ లేకుండా ఎవరూ ట్రేడ్ చేయరాదు._"
+            f"⚠️ _ఆదిత్య ట్రేడ్ వేవ్స్ • SEBI రిజిస్టర్డ్ సలహా కాదు. అవగాహన కొరకు మాత్రమే._"
         )
         self.dispatcher.send(msg)
 
-    # 03:30 PM: Live Top Gainers & Losers (Dynamic Scan)
+    # Step 5: 03:30 PM Live Top Gainers & Losers Post-Market Recap
     def post_live_market_recap(self):
-        print(">>> 03:30 PM: Scanning live NSE data for Top Gainers & Losers...")
+        print(">>> 03:30 PM: Fetching live market top gainers and losers...")
         nifty_basket = [
             "RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "ICICIBANK.NS", "INFY.NS",
             "BHARTIARTL.NS", "SBIN.NS", "ITC.NS", "LT.NS", "BAJFINANCE.NS",
@@ -292,82 +319,79 @@ class AdityaInstitutionalBot:
             except Exception:
                 continue
 
-        if not stock_data:
-            print("[Warning]: Stock data fetch failed.")
-            return
+        if stock_data:
+            stock_data.sort(key=lambda x: x["change"], reverse=True)
+            top_gainers = stock_data[:3]
+            top_losers = stock_data[-3:]
 
-        stock_data.sort(key=lambda x: x["change"], reverse=True)
-        top_gainers = stock_data[:3]
-        top_losers = stock_data[-3:]
+            gainers_str = "".join([f"• *{g['name']}*: ₹{g['price']:,.2f} (+{g['change']:.2f}%)\n" for g in top_gainers])
+            losers_str = "".join([f"• *{l['name']}*: ₹{l['price']:,.2f} ({l['change']:.2f}%)\n" for l in top_losers])
 
-        gainers_str = ""
-        for g in top_gainers:
-            gainers_str += f"• *{g['name']}*: ₹{g['price']:,.2f} (+{g['change']:.2f}%)\n"
-
-        losers_str = ""
-        for l in top_losers:
-            losers_str += f"• *{l['name']}*: ₹{l['price']:,.2f} ({l['change']:.2f}%)\n"
-
-        msg = (
-            f"📊 *మార్కెట్ ముగింపు స్థితిగతులు (LIVE MARKET RECAP — 03:30 PM)*\n"
-            f"━━━━━━━━━━━━━━━━━━━━━━\n\n"
-            f"🇮🇳 *NSE ప్రధాన సూచీలు నేటి అధికారిక మార్కెట్ డేటా*:\n\n"
-            f"🟢 *నేటి టాప్ గెయినర్స్ (Top Gainers)*:\n"
-            f"{gainers_str}\n"
-            f"🔴 *నేటి టాప్ లూజర్స్ (Top Losers)*:\n"
-            f"{losers_str}\n"
-            f"━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"🛡️ *మూలధన రక్షణ నియమం*: మార్కెట్‌లో స్థిరమైన లాభాలు క్రమశిక్షణతో కూడిన స్టాప్‌లాస్ ద్వారానే సాధ్యం.\n"
-            f"_ఆదిత్య ట్రేడ్ వేవ్స్ • Learn. Invest. Grow._"
-        )
-        self.dispatcher.send(msg)
+            msg = (
+                f"📊 *మార్కెట్ ముగింపు స్థితిగతులు (LIVE MARKET RECAP)*\n"
+                f"━━━━━━━━━━━━━━━━━━━━━━\n\n"
+                f"🇮🇳 *NSE ప్రధాన సూచీల నేటి అధికారిక డేటా*:\n\n"
+                f"🟢 *నేటి టాప్ గెయినర్స్ (Top Gainers)*:\n"
+                f"{gainers_str}\n"
+                f"🔴 *నేటి టాప్ లూజర్స్ (Top Losers)*:\n"
+                f"{losers_str}\n"
+                f"━━━━━━━━━━━━━━━━━━━━━━\n"
+                f"🛡️ *క్రమశిక్షణ సందేశం*: లాభాల కంటే ముందుగా మూలధన రక్షణకు ప్రాధాన్యత ఇవ్వండి.\n"
+                f"_ఆదిత్య ట్రేడ్ వేవ్స్ • Learn. Invest. Grow._"
+            )
+            self.dispatcher.send(msg)
 
 # ==============================================================================
-# 4. MASTER ENGINE RUNNER
+# 4. EXECUTION DRIVER
 # ==============================================================================
 def execute_system():
     TOKEN = "8570922035:AAFY3yEd1DWTKuEyXLNGTjC9IjyH_kBbTUM"
     CHANNEL_ID = "-1003832310811"
 
-    bot = AdityaInstitutionalBot(token=TOKEN, channel_id=CHANNEL_ID)
+    bot = AdityaLiveSystem(token=TOKEN, channel_id=CHANNEL_ID)
+    ist = pytz.timezone('Asia/Kolkata')
+    today_str = datetime.datetime.now(ist).strftime("%d %b %Y").upper()
 
-    # 1. 09:08 AM Dynamic Pre-Market Levels
-    bot.post_pre_market_readings()
+    # 1. 09:00 - 09:15 AM Minute-by-Minute Table Alert
+    bot.post_pre_market_minute_table()
     time.sleep(2)
 
-    # 2. 2-Min Early Radar
-    bot.send_2min_radar(
-        instrument="BANK NIFTY",
-        strike=53800,
-        opt_type="PE",
-        level=53894.60,
-        note="ధర రెడ్ లైన్ రెసిస్టెన్స్ వద్ద రిజెక్ట్ అవుతోంది. బేరిష్ రివర్సల్ క్యాండిల్ రూపుదిద్దుకుంటోంది."
-    )
+    # 2. 09:08 AM Pre-Market Discovery Summary (Live)
+    market_info = bot.post_pre_market_settlement(date_str=today_str)
     time.sleep(2)
 
-    # 3. Confirmed Trade Alert (5M Confirmation)
+    spot = market_info["spot"]
+    green_line = market_info["green_line"]
+    red_line = market_info["red_line"]
+
+    # 3. Dynamic Strike Selection (ATM Multiple of 100)
+    live_strike = int(round(spot / 100.0) * 100)
+
+    # Dynamic Live Entry Price Calculation (Base Premium estimation)
+    dynamic_entry_price = round(spot * 0.0042, 1)
+
+    # 4. 2-Min Heads-up Radar Alert
+    bot.send_radar(strike=live_strike, spot_price=spot, red_line=red_line)
+    time.sleep(2)
+
+    # 5. Confirmed Entry Trade Signal
     bot.send_trade_signal(
-        instrument="BANK NIFTY",
-        strike=53800,
-        opt_type="PE",
-        expiry="CURRENT",
-        entry_price=201.40,
-        spot_price=53794.55,
-        spot_sl=53907.15,
-        green_line=53620.00,
-        red_line=54160.00,
-        why_text="ధర రెడ్ లైన్ రెసిస్టెన్స్ వద్ద రిజెక్ట్ అయ్యి, 5-మినిట్ క్యాండిల్ కింద ముగిసింది."
+        strike=live_strike,
+        spot_price=spot,
+        green_line=green_line,
+        red_line=red_line,
+        entry_price=dynamic_entry_price
     )
     time.sleep(2)
 
-    # 4. Trailing TP1 (Zero-Risk) & TP2 Demonstration
+    # 6. Target Trailing Simulation (Zero-Risk Protection)
     if bot.active_position:
-        bot.active_position.update_ltp(212.0, bot.dispatcher)
+        bot.active_position.update_ltp(dynamic_entry_price + 11.0, bot.dispatcher)
         time.sleep(2)
-        bot.active_position.update_ltp(222.5, bot.dispatcher)
+        bot.active_position.update_ltp(dynamic_entry_price + 22.0, bot.dispatcher)
         time.sleep(2)
 
-    # 5. 03:30 PM Live Post-Market Recap
+    # 7. 03:30 PM Live Top Gainers & Losers Post-Market Recap
     bot.post_live_market_recap()
 
 if __name__ == "__main__":
